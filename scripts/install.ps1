@@ -27,11 +27,20 @@ if ($ParentDir -and (Test-Path (Join-Path $ParentDir "pyproject.toml"))) {
 } else {
     Write-Host "→ Fetching repository source code..." -ForegroundColor Yellow
     $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
-    if (Get-Command git -ErrorAction SilentlyContinue) {
+
+    $HasGit = $false
+    try {
+        $null = & git --version 2>$null
+        if ($LASTEXITCODE -eq 0) { $HasGit = $true }
+    } catch {
+        $HasGit = $false
+    }
+
+    if ($HasGit) {
         git clone --depth 1 $RepoUrl $TempDir
         $SourceDir = $TempDir
     } else {
-        Write-Host "→ Git not found. Downloading repository ZIP archive..." -ForegroundColor Yellow
+        Write-Host "→ Git not found or unavailable. Downloading repository ZIP archive..." -ForegroundColor Yellow
         $ZipUrl = ($RepoUrl -replace '\.git$', '') + "/archive/refs/heads/master.zip"
         $ZipFile = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.IO.Path]::GetRandomFileName()).zip"
         Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile
