@@ -1,0 +1,23 @@
+[project]
+name = "tool-agent"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "platformdirs>=4.11.2",
+    "pydantic-settings>=2.15.0",
+    "rich>=15.0.0",
+    "typer>=0.27.1",
+]
+
+[project.scripts]
+tool-agent = "tool_agent.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.2",
+    "ty>=0.0.70",
+]

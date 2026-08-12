@@ -1,0 +1,86 @@
+# PowerShell Installer for Tool Background Agent Daemon
+[CmdletBinding()]
+param (
+    [string]$InstallDir = "C:\Program Files\tool-agent",
+    [string]$RepoUrl = "https://github.com/tool/tool-agent.git"
+)
+
+$ErrorActionPreference = "Stop"
+
+Write-Host "=====================================================" -ForegroundColor Cyan
+Write-Host "        Tool Background Agent Windows Installer      " -ForegroundColor Cyan
+Write-Host "=====================================================" -ForegroundColor Cyan
+
+# 1. Workspace detection
+$ParentDir = Split-Path -Path $PSScriptRoot -Parent
+$LocalRepo = (Test-Path (Join-Path $ParentDir "pyproject.toml")) -or (Test-Path (Join-Path $PWD "pyproject.toml"))
+$TempDir = $null
+
+if (Test-Path (Join-Path $ParentDir "pyproject.toml")) {
+    $SourceDir = $ParentDir
+    Write-Host "→ Using local source workspace: $SourceDir" -ForegroundColor Green
+} elseif (Test-Path (Join-Path $PWD "pyproject.toml")) {
+    $SourceDir = $PWD
+    Write-Host "→ Using local source workspace: $SourceDir" -ForegroundColor Green
+} else {
+    Write-Host "→ Fetching repository source code..." -ForegroundColor Yellow
+    $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
+    git clone --depth 1 $RepoUrl $TempDir
+    $SourceDir = $TempDir
+}
+
+try {
+    # 2. Ensure uv is installed
+    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+        Write-Host "→ Package manager 'uv' not found. Installing uv..." -ForegroundColor Yellow
+        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+        $env:Path = "$env:USERPROFILE\.cargo\bin;$env:USERPROFILE\.local\bin;" + $env:Path
+    }
+
+    # 3. Build wheel artifact
+    Write-Host "→ Building distribution wheel artifact..." -ForegroundColor Yellow
+    Set-Location $SourceDir
+    uv build --wheel --out-dir "$SourceDir\dist"
+
+    $WheelFile = Get-ChildItem -Path "$SourceDir\dist\*.whl" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $WheelFile) {
+        throw "Failed to build or locate wheel artifact in $SourceDir\dist"
+    }
+    Write-Host "✓ Built wheel: $($WheelFile.Name)" -ForegroundColor Green
+
+    # 4. Target directory creation
+    if (-not (Test-Path $InstallDir)) {
+        Write-Host "→ Creating installation directory $InstallDir..." -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+    }
+
+    # 5. Read .python-version
+    $PythonVer = "3.14"
+    $PythonVersionFile = Join-Path $SourceDir ".python-version"
+    if (Test-Path $PythonVersionFile) {
+        $PythonVer = (Get-Content $PythonVersionFile).Trim()
+    }
+
+    # 6. Create virtual environment
+    $VenvDir = Join-Path $InstallDir ".venv"
+    Write-Host "→ Creating virtual environment (Python $PythonVer) at $VenvDir..." -ForegroundColor Yellow
+    uv venv --allow-existing --python $PythonVer $VenvDir
+
+    # 7. Install wheel package into venv
+    Write-Host "→ Installing wheel into virtual environment..." -ForegroundColor Yellow
+    $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
+    if (-not (Test-Path $VenvPython)) {
+        $VenvPython = Join-Path $VenvDir "bin\python.exe"
+    }
+    uv pip install --python $VenvPython $WheelFile.FullName
+
+    Write-Host "=====================================================" -ForegroundColor Cyan
+    Write-Host "✓ Successfully installed tool-agent to $InstallDir" -ForegroundColor Green
+    Write-Host "✓ Virtual environment: $VenvDir" -ForegroundColor Green
+    Write-Host "=====================================================" -ForegroundColor Cyan
+}
+finally {
+    if ($TempDir -and (Test-Path $TempDir)) {
+        Remove-Item -Recurse -Force $TempDir -ErrorAction SilentlyContinue
+    }
+}
