@@ -101,9 +101,38 @@ try {
     }
     uv pip install --python $VenvPython $WheelFile.FullName
 
+    # 8. Add to PATH automatically
+    $VenvBinDir = Join-Path $VenvDir "Scripts"
+    if (-not (Test-Path $VenvBinDir)) {
+        $VenvBinDir = Join-Path $VenvDir "bin"
+    }
+
+    Write-Host "→ Adding executable directory to PATH..." -ForegroundColor Yellow
+
+    # Update current session environment PATH
+    if (-not ($env:Path -split ';' -contains $VenvBinDir)) {
+        $env:Path = "$VenvBinDir;$env:Path"
+    }
+
+    # Update persistent User environment PATH
+    try {
+        $UserPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+        $UserPathEntries = if ($UserPath) { $UserPath -split ';' } else { @() }
+        if (-not ($UserPathEntries -contains $VenvBinDir)) {
+            $NewUserPath = if ($UserPath) { "$VenvBinDir;$UserPath" } else { $VenvBinDir }
+            [Environment]::SetEnvironmentVariable("Path", $NewUserPath, [EnvironmentVariableTarget]::User)
+            Write-Host "✓ Added $VenvBinDir to User PATH permanently" -ForegroundColor Green
+        } else {
+            Write-Host "✓ $VenvBinDir is already in User PATH" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "! Could not update persistent User PATH: $_" -ForegroundColor Yellow
+    }
+
     Write-Host "=====================================================" -ForegroundColor Cyan
     Write-Host "✓ Successfully installed tool-daemon to $InstallDir" -ForegroundColor Green
     Write-Host "✓ Virtual environment: $VenvDir" -ForegroundColor Green
+    Write-Host "✓ Executable added to PATH: $VenvBinDir" -ForegroundColor Green
     Write-Host "=====================================================" -ForegroundColor Cyan
 }
 finally {
