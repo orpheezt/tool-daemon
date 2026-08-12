@@ -14,7 +14,7 @@ def is_admin() -> bool:
     if hasattr(ctypes, "windll"):
         try:
             return bool(ctypes.windll.shell32.IsUserAnAdmin())
-        except AttributeError, OSError:
+        except (AttributeError, OSError):
             return False
     return False
 
@@ -42,6 +42,7 @@ class WindowsServiceManager(BaseServiceManager):
             f"{exec_cmd} --interval {config.interval} "
             f"--format {config.log_format} --level {config.log_level}"
         )
+        escaped_bin_path = full_bin_path.replace('"', '\\"')
 
         match config.startup.lower():
             case "auto" | "automatic":
@@ -57,9 +58,9 @@ class WindowsServiceManager(BaseServiceManager):
             "sc.exe",
             "create",
             config.name,
-            f"binPath= {full_bin_path}",
+            f'binPath= "{escaped_bin_path}"',
             f"start= {startup_type}",
-            f"DisplayName= {config.display_name}",
+            f'DisplayName= "{config.display_name}"',
         ]
 
         try:
