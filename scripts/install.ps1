@@ -12,11 +12,13 @@ Write-Host "        Tool Background Daemon Windows Installer     " -ForegroundCo
 Write-Host "=====================================================" -ForegroundColor Cyan
 
 # 1. Workspace detection
-$ParentDir = Split-Path -Path $PSScriptRoot -Parent
-$LocalRepo = (Test-Path (Join-Path $ParentDir "pyproject.toml")) -or (Test-Path (Join-Path $PWD "pyproject.toml"))
+$ParentDir = $null
+if (-not [string]::IsNullOrEmpty($PSScriptRoot)) {
+    $ParentDir = Split-Path -Path $PSScriptRoot -Parent
+}
 $TempDir = $null
 
-if (Test-Path (Join-Path $ParentDir "pyproject.toml")) {
+if ($ParentDir -and (Test-Path (Join-Path $ParentDir "pyproject.toml"))) {
     $SourceDir = $ParentDir
     Write-Host "→ Using local source workspace: $SourceDir" -ForegroundColor Green
 } elseif (Test-Path (Join-Path $PWD "pyproject.toml")) {
@@ -25,15 +27,31 @@ if (Test-Path (Join-Path $ParentDir "pyproject.toml")) {
 } else {
     Write-Host "→ Fetching repository source code..." -ForegroundColor Yellow
     $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
-    git clone --depth 1 $RepoUrl $TempDir
-    $SourceDir = $TempDir
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        git clone --depth 1 $RepoUrl $TempDir
+        $SourceDir = $TempDir
+    } else {
+        Write-Host "→ Git not found. Downloading repository ZIP archive..." -ForegroundColor Yellow
+        $ZipUrl = ($RepoUrl -replace '\.git$', '') + "/archive/refs/heads/master.zip"
+        $ZipFile = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.IO.Path]::GetRandomFileName()).zip"
+        Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile
+        Expand-Archive -Path $ZipFile -DestinationPath $TempDir -Force
+        Remove-Item $ZipFile -ErrorAction SilentlyContinue
+
+        $Extracted = Get-ChildItem -Path $TempDir | Select-Object -First 1
+        if ($Extracted -and $Extracted.PSIsContainer) {
+            $SourceDir = $Extracted.FullName
+        } else {
+            $SourceDir = $TempDir
+        }
+    }
 }
 
 try {
     # 2. Ensure uv is installed
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         Write-Host "→ Package manager 'uv' not found. Installing uv..." -ForegroundColor Yellow
-        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+        irm https://astral.sh/uv/install.ps1 | iex
         $env:Path = "$env:USERPROFILE\.cargo\bin;$env:USERPROFILE\.local\bin;" + $env:Path
     }
 

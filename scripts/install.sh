@@ -19,8 +19,13 @@ echo "        Tool Background Daemon Installer             "
 echo "====================================================="
 
 # 1. Detect source workspace
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PARENT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]:-}"
+if [ -n "$SCRIPT_PATH" ] && [ -f "$SCRIPT_PATH" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+    PARENT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+else
+    PARENT_DIR=""
+fi
 
 if [ -f "$PARENT_DIR/pyproject.toml" ] && [ -f "$PARENT_DIR/.python-version" ]; then
     SOURCE_DIR="$PARENT_DIR"
@@ -31,8 +36,20 @@ elif [ -f "$PWD/pyproject.toml" ] && [ -f "$PWD/.python-version" ]; then
 else
     echo "→ Local source workspace not detected. Fetching repository..."
     TEMP_DIR="$(mktemp -d)"
-    git clone --depth 1 "$REPO_URL" "$TEMP_DIR"
-    SOURCE_DIR="$TEMP_DIR"
+    if command -v git &>/dev/null; then
+        git clone --depth 1 "$REPO_URL" "$TEMP_DIR"
+        SOURCE_DIR="$TEMP_DIR"
+    elif command -v curl &>/dev/null && command -v unzip &>/dev/null; then
+        echo "→ git not found. Downloading ZIP archive..."
+        ZIP_URL="${REPO_URL%.git}/archive/refs/heads/master.zip"
+        curl -sSL "$ZIP_URL" -o "$TEMP_DIR/repo.zip"
+        unzip -q "$TEMP_DIR/repo.zip" -d "$TEMP_DIR"
+        rm -f "$TEMP_DIR/repo.zip"
+        SOURCE_DIR="$(find "$TEMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+    else
+        echo "Error: Neither git nor curl/unzip found." >&2
+        exit 1
+    fi
 fi
 
 # 2. Ensure uv is installed

@@ -19,13 +19,14 @@
 
 ### Linux / macOS (Bash)
 ```bash
-curl -LsSf https://raw.githubusercontent.com/orpheezt/tool-daemon/main/scripts/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/orpheezt/tool-daemon/refs/heads/master/scripts/install.sh | sh
 ```
 
 ### Windows (PowerShell)
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/orpheezt/tool-daemon/main/scripts/install.ps1 | iex"
+irm https://raw.githubusercontent.com/orpheezt/tool-daemon/refs/heads/master/scripts/install.ps1 | iex
 ```
+*Note: If running from Command Prompt (CMD), prefix with `powershell -ExecutionPolicy Bypass -Command "..."`.*
 
 The installer automatically:
 1. Installs `uv` if not present.
