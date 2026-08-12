@@ -1,4 +1,3 @@
-# PowerShell Installer for Tool Background Daemon
 [CmdletBinding()]
 param (
     [string]$InstallDir = "C:\Program Files\tool-daemon",
@@ -11,7 +10,6 @@ Write-Host "=====================================================" -ForegroundCo
 Write-Host "        Tool Background Daemon Windows Installer     " -ForegroundColor Cyan
 Write-Host "=====================================================" -ForegroundColor Cyan
 
-# 1. Workspace detection
 $ParentDir = $null
 if (-not [string]::IsNullOrEmpty($PSScriptRoot)) {
     $ParentDir = Split-Path -Path $PSScriptRoot -Parent
@@ -40,7 +38,7 @@ if ($ParentDir -and (Test-Path (Join-Path $ParentDir "pyproject.toml"))) {
         git clone --depth 1 $RepoUrl $TempDir
         $SourceDir = $TempDir
     } else {
-        Write-Host "→ Git not found or unavailable. Downloading repository ZIP archive..." -ForegroundColor Yellow
+        Write-Host "→ Git not found. Downloading repository ZIP archive..." -ForegroundColor Yellow
         $ZipUrl = ($RepoUrl -replace '\.git$', '') + "/archive/refs/heads/master.zip"
         $ZipFile = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.IO.Path]::GetRandomFileName()).zip"
         Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile
@@ -57,14 +55,28 @@ if ($ParentDir -and (Test-Path (Join-Path $ParentDir "pyproject.toml"))) {
 }
 
 try {
-    # 2. Ensure uv is installed
+    if (-not (Get-Command nssm -ErrorAction SilentlyContinue)) {
+        Write-Host "→ NSSM service manager not found in PATH. Provisioning via winget..." -ForegroundColor Yellow
+        if (Get-Command winget -ErrorAction SilentlyContinue) {
+            try {
+                winget install --id NSSM.NSSM -e --accept-package-agreements --accept-source-agreements
+                Write-Host "✓ Installed NSSM via winget" -ForegroundColor Green
+            } catch {
+                Write-Host "! Winget installation of NSSM failed: $_" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "! winget package manager not found. Please install NSSM manually (winget install --id NSSM.NSSM -e)." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "✓ NSSM service manager detected" -ForegroundColor Green
+    }
+
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         Write-Host "→ Package manager 'uv' not found. Installing uv..." -ForegroundColor Yellow
         irm https://astral.sh/uv/install.ps1 | iex
         $env:Path = "$env:USERPROFILE\.cargo\bin;$env:USERPROFILE\.local\bin;" + $env:Path
     }
 
-    # 3. Build wheel artifact
     Write-Host "→ Building distribution wheel artifact..." -ForegroundColor Yellow
     Set-Location $SourceDir
     uv build --wheel --out-dir "$SourceDir\dist"
@@ -75,33 +87,28 @@ try {
     }
     Write-Host "✓ Built wheel: $($WheelFile.Name)" -ForegroundColor Green
 
-    # 4. Target directory creation
     if (-not (Test-Path $InstallDir)) {
         Write-Host "→ Creating installation directory $InstallDir..." -ForegroundColor Yellow
         New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
     }
 
-    # 5. Read .python-version
     $PythonVer = "3.14"
     $PythonVersionFile = Join-Path $SourceDir ".python-version"
     if (Test-Path $PythonVersionFile) {
         $PythonVer = (Get-Content $PythonVersionFile).Trim()
     }
 
-    # 6. Create virtual environment
     $VenvDir = Join-Path $InstallDir ".venv"
     Write-Host "→ Creating virtual environment (Python $PythonVer) at $VenvDir..." -ForegroundColor Yellow
     uv venv --allow-existing --python $PythonVer $VenvDir
 
-    # 7. Install wheel package into venv
     Write-Host "→ Installing wheel into virtual environment..." -ForegroundColor Yellow
     $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
     if (-not (Test-Path $VenvPython)) {
         $VenvPython = Join-Path $VenvDir "bin\python.exe"
     }
-    uv pip install --python $VenvPython $WheelFile.FullName
+    uv pip install --force-reinstall --python $VenvPython $WheelFile.FullName
 
-    # 8. Add to PATH automatically
     $VenvBinDir = Join-Path $VenvDir "Scripts"
     if (-not (Test-Path $VenvBinDir)) {
         $VenvBinDir = Join-Path $VenvDir "bin"
@@ -109,12 +116,10 @@ try {
 
     Write-Host "→ Adding executable directory to PATH..." -ForegroundColor Yellow
 
-    # Update current session environment PATH
     if (-not ($env:Path -split ';' -contains $VenvBinDir)) {
         $env:Path = "$VenvBinDir;$env:Path"
     }
 
-    # Update persistent User environment PATH
     try {
         $UserPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
         $UserPathEntries = if ($UserPath) { $UserPath -split ';' } else { @() }

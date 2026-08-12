@@ -6,7 +6,7 @@
 
 ## Features
 
-- **Cross-Platform Background Services**: Seamless background service management across **Linux** (systemd) and **Windows** (Service Control Manager via `sc.exe`).
+- **Cross-Platform Background Services**: Seamless background service management across **Linux** (systemd) and **Windows** (NSSM - Non-Sucking Service Manager via `winget`).
 - **Automated Installation Scripts**: One-line install scripts for Linux (`scripts/install.sh`) and Windows (`scripts/install.ps1`).
 - **Security Sandboxing**: Systemd isolation directives (`ProtectSystem=strict`, `ProtectHome=true`, `PrivateTmp=true`, `NoNewPrivileges=true`).
 - **Unprivileged Service Account**: System-wide installation automatically provisions and runs under a dedicated `User=tool` / `Group=tool` account.

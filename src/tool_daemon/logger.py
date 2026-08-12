@@ -1,7 +1,8 @@
 import json
 import logging
+import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 
 from rich.logging import RichHandler
 
@@ -16,10 +17,9 @@ class LogRecordPayload:
     job_id: str | None = None
     status: str | None = None
     exception: str | None = None
-    details: dict[str, str] = field(default_factory=dict)
 
     def to_json(self) -> str:
-        data = {k: v for k, v in asdict(self).items() if v is not None and v != {}}
+        data = {k: v for k, v in asdict(self).items() if v is not None}
         return json.dumps(data)
 
 
@@ -71,8 +71,8 @@ def setup_logger(
                     show_level=True,
                     show_path=False,
                 )
-            case "json" | _:
-                handler = logging.StreamHandler()
+            case _:
+                handler = logging.StreamHandler(sys.stdout)
                 handler.setFormatter(JsonFormatter())
 
     logger.addHandler(handler)

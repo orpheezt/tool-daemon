@@ -1,6 +1,6 @@
 [project]
 name = "tool-daemon"
-version = "0.1.0"
+version = "0.1.2"
 requires-python = ">=3.14"
 dependencies = [
     "platformdirs>=4.11.2",

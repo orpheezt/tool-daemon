@@ -18,7 +18,6 @@ echo "====================================================="
 echo "        Tool Background Daemon Installer             "
 echo "====================================================="
 
-# 1. Detect source workspace
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 if [ -n "$SCRIPT_PATH" ] && [ -f "$SCRIPT_PATH" ]; then
     SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
@@ -52,14 +51,12 @@ else
     fi
 fi
 
-# 2. Ensure uv is installed
 if ! command -v uv &>/dev/null; then
     echo "→ Package manager 'uv' not found. Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 fi
 
-# 3. Build wheel artifact
 echo "→ Building distribution wheel artifact..."
 (cd "$SOURCE_DIR" && uv build --wheel --out-dir "$SOURCE_DIR/dist")
 
@@ -70,21 +67,18 @@ if [ -z "$WHEEL_FILE" ]; then
 fi
 echo "✓ Built wheel: $(basename "$WHEEL_FILE")"
 
-# 4. Provision system user account if installing in system mode
 if command -v useradd &>/dev/null && ! id -u "$SYS_USER" &>/dev/null; then
     echo "→ Creating unprivileged system user '$SYS_USER'..."
     sudo useradd -r -s /bin/false -d "$INSTALL_DIR" "$SYS_USER" 2>/dev/null || true
     echo "✓ Created system user '$SYS_USER'"
 fi
 
-# 5. Create installation target directory at /opt/tool-daemon
 if [ ! -d "$INSTALL_DIR" ]; then
     echo "→ Creating installation directory $INSTALL_DIR..."
     sudo mkdir -p "$INSTALL_DIR"
     sudo chown -R "$USER:$(id -gn)" "$INSTALL_DIR"
 fi
 
-# 6. Read Python version from .python-version
 PYTHON_VER="3.14"
 if [ -f "$SOURCE_DIR/.python-version" ]; then
     PYTHON_VER="$(tr -d ' \t\r\n' < "$SOURCE_DIR/.python-version")"
@@ -93,11 +87,9 @@ fi
 echo "→ Creating virtual environment (Python $PYTHON_VER) at $INSTALL_DIR/.venv..."
 uv venv --allow-existing --python "$PYTHON_VER" "$INSTALL_DIR/.venv"
 
-# 7. Install wheel into virtual environment
 echo "→ Installing tool-daemon wheel into virtual environment..."
-uv pip install --python "$INSTALL_DIR/.venv/bin/python" "$WHEEL_FILE"
+uv pip install --force-reinstall --python "$INSTALL_DIR/.venv/bin/python" "$WHEEL_FILE"
 
-# 8. Symlink executable to system PATH
 echo "→ Symlinking executable to $BIN_DIR/tool-daemon..."
 sudo ln -sf "$INSTALL_DIR/.venv/bin/tool-daemon" "$BIN_DIR/tool-daemon"
 

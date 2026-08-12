@@ -1,4 +1,4 @@
-from functools import lru_cache
+from functools import cache
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -12,9 +12,7 @@ class DaemonSettings(BaseSettings):
         extra="ignore",
     )
 
-    agent_id: str = Field(
-        default="tool-daemon",
-    )
+    agent_id: str = Field(default="tool-daemon")
     poll_interval: float = Field(
         default=5.0,
         description="Sleep interval in seconds between daemon loop passes",
@@ -61,6 +59,6 @@ class DaemonSettings(BaseSettings):
     )
 
 
-@lru_cache
+@cache
 def get_settings() -> DaemonSettings:
     return DaemonSettings()
