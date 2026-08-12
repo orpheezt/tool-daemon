@@ -13,7 +13,7 @@ class DaemonSettings(BaseSettings):
     )
 
     agent_id: str = Field(
-        default="tool-agent",
+        default="tool-daemon",
     )
     poll_interval: float = Field(
         default=5.0,

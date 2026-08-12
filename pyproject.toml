@@ -1,5 +1,5 @@
 [project]
-name = "tool-agent"
+name = "tool-daemon"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tool-agent = "tool_agent.cli:main"
+tool-daemon = "tool_daemon.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]

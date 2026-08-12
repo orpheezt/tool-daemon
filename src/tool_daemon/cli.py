@@ -1,9 +1,9 @@
 import typer
 from rich.console import Console
 
-from tool_agent.agent import AgentDaemon
-from tool_agent.config import get_settings
-from tool_agent.services import ServiceConfig, get_service_manager
+from tool_daemon.agent import AgentDaemon
+from tool_daemon.config import get_settings
+from tool_daemon.services import ServiceConfig, get_service_manager
 
 app = typer.Typer(
     help="Tool Background Agent Daemon CLI - Manage daemon execution & cross-platform background services.",

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-INSTALL_DIR="${INSTALL_DIR:-/opt/tool-agent}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/tool-daemon}"
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 REPO_URL="${REPO_URL:-https://github.com/orpheezt/tool-daemon.git}"
 SYS_USER="${SYS_USER:-tool}"
@@ -15,7 +15,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "====================================================="
-echo "        Tool Background Agent Installer              "
+echo "        Tool Background Daemon Installer             "
 echo "====================================================="
 
 # 1. Detect source workspace
@@ -60,7 +60,7 @@ if command -v useradd &>/dev/null && ! id -u "$SYS_USER" &>/dev/null; then
     echo "✓ Created system user '$SYS_USER'"
 fi
 
-# 5. Create installation target directory at /opt/tool-agent
+# 5. Create installation target directory at /opt/tool-daemon
 if [ ! -d "$INSTALL_DIR" ]; then
     echo "→ Creating installation directory $INSTALL_DIR..."
     sudo mkdir -p "$INSTALL_DIR"
@@ -77,14 +77,14 @@ echo "→ Creating virtual environment (Python $PYTHON_VER) at $INSTALL_DIR/.ven
 uv venv --allow-existing --python "$PYTHON_VER" "$INSTALL_DIR/.venv"
 
 # 7. Install wheel into virtual environment
-echo "→ Installing tool-agent wheel into virtual environment..."
+echo "→ Installing tool-daemon wheel into virtual environment..."
 uv pip install --python "$INSTALL_DIR/.venv/bin/python" "$WHEEL_FILE"
 
 # 8. Symlink executable to system PATH
-echo "→ Symlinking executable to $BIN_DIR/tool-agent..."
-sudo ln -sf "$INSTALL_DIR/.venv/bin/tool-agent" "$BIN_DIR/tool-agent"
+echo "→ Symlinking executable to $BIN_DIR/tool-daemon..."
+sudo ln -sf "$INSTALL_DIR/.venv/bin/tool-daemon" "$BIN_DIR/tool-daemon"
 
 echo "====================================================="
-echo "✓ Successfully installed tool-agent to $INSTALL_DIR"
-echo "✓ Binary symlinked at $BIN_DIR/tool-agent"
+echo "✓ Successfully installed tool-daemon to $INSTALL_DIR"
+echo "✓ Binary symlinked at $BIN_DIR/tool-daemon"
 echo "====================================================="

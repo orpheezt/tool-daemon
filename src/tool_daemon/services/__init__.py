@@ -1,8 +1,8 @@
 import sys
 
-from tool_agent.services.base import BaseServiceManager, ServiceConfig
-from tool_agent.services.systemd import SystemdServiceManager
-from tool_agent.services.windows import WindowsServiceManager
+from tool_daemon.services.base import BaseServiceManager, ServiceConfig
+from tool_daemon.services.systemd import SystemdServiceManager
+from tool_daemon.services.windows import WindowsServiceManager
 
 
 def get_service_manager() -> BaseServiceManager:

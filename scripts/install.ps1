@@ -1,14 +1,14 @@
-# PowerShell Installer for Tool Background Agent Daemon
+# PowerShell Installer for Tool Background Daemon
 [CmdletBinding()]
 param (
-    [string]$InstallDir = "C:\Program Files\tool-agent",
+    [string]$InstallDir = "C:\Program Files\tool-daemon",
     [string]$RepoUrl = "https://github.com/orpheezt/tool-daemon.git"
 )
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "=====================================================" -ForegroundColor Cyan
-Write-Host "        Tool Background Agent Windows Installer      " -ForegroundColor Cyan
+Write-Host "        Tool Background Daemon Windows Installer     " -ForegroundColor Cyan
 Write-Host "=====================================================" -ForegroundColor Cyan
 
 # 1. Workspace detection
@@ -75,7 +75,7 @@ try {
     uv pip install --python $VenvPython $WheelFile.FullName
 
     Write-Host "=====================================================" -ForegroundColor Cyan
-    Write-Host "✓ Successfully installed tool-agent to $InstallDir" -ForegroundColor Green
+    Write-Host "✓ Successfully installed tool-daemon to $InstallDir" -ForegroundColor Green
     Write-Host "✓ Virtual environment: $VenvDir" -ForegroundColor Green
     Write-Host "=====================================================" -ForegroundColor Cyan
 }

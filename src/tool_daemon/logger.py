@@ -42,7 +42,7 @@ class JsonFormatter(logging.Formatter):
 
 
 def setup_logger(
-    name: str = "tool.agent",
+    name: str = "tool.daemon",
     level: str = "INFO",
     log_format: str = "json",
     log_file: str | None = None,

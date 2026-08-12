@@ -1,6 +1,6 @@
-# Tool Agent (`tool-agent`)
+# Tool Daemon (`tool-daemon`)
 
-> Cross-Platform Background Agent Daemon with Systemd Sandboxing, Resource Limits, Watchdog Heartbeats, and Windows Service Control Manager Integration.
+> Cross-Platform Background Daemon with Systemd Sandboxing, Resource Limits, Watchdog Heartbeats, and Windows Service Control Manager Integration.
 
 ---
 
@@ -31,9 +31,9 @@ The installer automatically:
 1. Installs `uv` if not present.
 2. Clones or uses repository sources.
 3. Provisions the `tool` system user (Linux system mode).
-4. Creates a Python virtual environment at `/opt/tool-agent/.venv` using `.python-version`.
+4. Creates a Python virtual environment at `/opt/tool-daemon/.venv` using `.python-version`.
 5. Builds and installs the distribution wheel package (`.whl`).
-6. Symlinks the executable to `/usr/local/bin/tool-agent`.
+6. Symlinks the executable to `/usr/local/bin/tool-daemon`.
 
 ---
 
@@ -42,7 +42,7 @@ The installer automatically:
 ### 1. Run in Foreground
 Run the daemon interactively in the terminal:
 ```bash
-tool-agent run --interval 5.0 --format json --level INFO
+tool-daemon run --interval 5.0 --format json --level INFO
 ```
 
 ### 2. Install as Background Service
@@ -50,25 +50,25 @@ tool-agent run --interval 5.0 --format json --level INFO
 #### User Mode Service (Linux `~/.config/systemd/user/`)
 Does not require `sudo` privileges:
 ```bash
-tool-agent install --user
+tool-daemon install --user
 ```
 
 #### System Mode Service (Linux `/etc/systemd/system/`)
 Runs under dedicated unprivileged system user `tool`:
 ```bash
-sudo tool-agent install --system
+sudo tool-daemon install --system
 ```
 
 #### Windows Service (Windows SCM)
 Run Command Prompt or PowerShell as Administrator:
 ```powershell
-tool-agent install --startup auto --display-name "Tool Agent Daemon"
+tool-daemon install --startup auto --display-name "Tool Agent Daemon"
 ```
 
 ### 3. Service Options & Hardware Limits
 Customize poll interval, sandboxing, watchdog, and hardware resource boundaries during installation:
 ```bash
-tool-agent install \
+tool-daemon install \
   --system \
   --interval 5.0 \
   --sandbox \
@@ -84,13 +84,13 @@ tool-agent install \
 Stop and remove the installed service:
 ```bash
 # Linux User Mode
-tool-agent uninstall --user
+tool-daemon uninstall --user
 
 # Linux System Mode
-sudo tool-agent uninstall --system
+sudo tool-daemon uninstall --system
 
 # Windows Service
-tool-agent uninstall
+tool-daemon uninstall
 ```
 
 ---
@@ -123,7 +123,7 @@ sudo journalctl -u tool-daemon -f -o cat
 
 #### Systemd Heartbeat & Lifecycle Mechanics
 - **`Type=notify`**: Systemd launches the service process and waits for `READY=1` via Unix domain socket `$NOTIFY_SOCKET` before marking the unit as `active (running)`.
-- **`WatchdogSec=30s`**: Systemd expects `WATCHDOG=1` heartbeats after each execution pass. If the agent process hangs or deadlocks beyond 30 seconds, systemd automatically kills and restarts the process.
+- **`WatchdogSec=30s`**: Systemd expects `WATCHDOG=1` heartbeats after each execution pass. If the daemon process hangs or deadlocks beyond 30 seconds, systemd automatically kills and restarts the process.
 - **Graceful Shutdown**: On `systemctl stop`, systemd sends `SIGTERM`. The daemon catches the signal, emits `STOPPING=1` notification, and exits cleanly.
 - **Failure Recovery**: `Restart=on-failure` with `RestartSec=5s` automatically recovers from unexpected crashes.
 
@@ -189,7 +189,7 @@ sc.exe stop tool-daemon
 uv sync
 
 # Run daemon locally
-uv run tool-agent run
+uv run tool-daemon run
 ```
 
 ### Code Formatting & Type Checking

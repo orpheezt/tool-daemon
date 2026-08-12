@@ -5,7 +5,7 @@ import sys
 
 from rich.console import Console
 
-from tool_agent.services.base import BaseServiceManager, ServiceConfig
+from tool_daemon.services.base import BaseServiceManager, ServiceConfig
 
 console = Console()
 
@@ -20,10 +20,10 @@ def is_admin() -> bool:
 
 
 def get_windows_executable_command() -> str:
-    exec_path = shutil.which("tool-agent")
+    exec_path = shutil.which("tool-daemon")
     if exec_path:
         return f'"{exec_path}" run'
-    return f'"{sys.executable}" -m tool_agent.cli run'
+    return f'"{sys.executable}" -m tool_daemon.cli run'
 
 
 class WindowsServiceManager(BaseServiceManager):

@@ -2,9 +2,9 @@ import signal
 import time
 from types import FrameType
 
-from tool_agent.config import DaemonSettings
-from tool_agent.logger import setup_logger
-from tool_agent.services import get_service_manager
+from tool_daemon.config import DaemonSettings
+from tool_daemon.logger import setup_logger
+from tool_daemon.services import get_service_manager
 
 
 class AgentDaemon:
@@ -14,7 +14,7 @@ class AgentDaemon:
         self.cycle_count = 0
         self.service_manager = get_service_manager()
         self.logger = setup_logger(
-            name="tool.agent",
+            name="tool.daemon",
             level=self.settings.log_level,
             log_format=self.settings.log_format,
         )
