@@ -19,12 +19,12 @@
 
 ### Linux / macOS (Bash)
 ```bash
-curl -LsSf https://raw.githubusercontent.com/tool/tool-agent/main/scripts/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/orpheezt/tool-daemon/main/scripts/install.sh | sh
 ```
 
 ### Windows (PowerShell)
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/tool/tool-agent/main/scripts/install.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/orpheezt/tool-daemon/main/scripts/install.ps1 | iex"
 ```
 
 The installer automatically:

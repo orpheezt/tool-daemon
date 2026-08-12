@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param (
     [string]$InstallDir = "C:\Program Files\tool-agent",
-    [string]$RepoUrl = "https://github.com/tool/tool-agent.git"
+    [string]$RepoUrl = "https://github.com/orpheezt/tool-daemon.git"
 )
 
 $ErrorActionPreference = "Stop"

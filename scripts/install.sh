@@ -3,7 +3,7 @@ set -euo pipefail
 
 INSTALL_DIR="${INSTALL_DIR:-/opt/tool-agent}"
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
-REPO_URL="${REPO_URL:-https://github.com/tool/tool-agent.git}"
+REPO_URL="${REPO_URL:-https://github.com/orpheezt/tool-daemon.git}"
 SYS_USER="${SYS_USER:-tool}"
 
 TEMP_DIR=""
