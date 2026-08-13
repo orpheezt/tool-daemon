@@ -1,6 +1,6 @@
 # Tool Daemon (`tool-daemon`)
 
-> Cross-Platform Background Daemon with Systemd Sandboxing, Resource Limits, Watchdog Heartbeats, and Windows Service Control Manager Integration.
+> Cross-Platform Background Daemon with Systemd Sandboxing, Resource Limits, Watchdog Heartbeats, and NSSM Windows Service Integration.
 
 ---
 
@@ -8,8 +8,9 @@
 
 - **Cross-Platform Background Services**: Seamless background service management across **Linux** (systemd) and **Windows** (NSSM - Non-Sucking Service Manager via `winget`).
 - **Automated Installation Scripts**: One-line install scripts for Linux (`scripts/install.sh`) and Windows (`scripts/install.ps1`).
+- **NSSM Log Redirection**: Windows background services output logs directly to `C:\ProgramData\tool-daemon\logs\` with log rotation.
 - **Security Sandboxing**: Systemd isolation directives (`ProtectSystem=strict`, `ProtectHome=true`, `PrivateTmp=true`, `NoNewPrivileges=true`).
-- **Unprivileged Service Account**: System-wide installation automatically provisions and runs under a dedicated `User=tool` / `Group=tool` account.
+- **Unprivileged Service Account**: System-wide Linux installation automatically provisions and runs under a dedicated `User=tool` / `Group=tool` account.
 - **Hardware Quotas & Limits**: Configurable memory boundaries (`MemoryMax`, `MemoryHigh`), CPU quotas (`CPUQuota`), and task limits (`TasksMax`).
 - **Systemd Watchdog & Notification**: Built-in `sd_notify` socket protocol sending `READY=1`, `WATCHDOG=1`, and `STOPPING=1` status heartbeats.
 
@@ -29,12 +30,13 @@ irm https://raw.githubusercontent.com/orpheezt/tool-daemon/refs/heads/master/scr
 *Note: If running from Command Prompt (CMD), prefix with `powershell -ExecutionPolicy Bypass -Command "..."`.*
 
 The installer automatically:
-1. Installs `uv` if not present.
-2. Clones or uses repository sources.
-3. Provisions the `tool` system user (Linux system mode).
-4. Creates a Python virtual environment at `/opt/tool-daemon/.venv` using `.python-version`.
-5. Builds and installs the distribution wheel package (`.whl`).
-6. Symlinks the executable to `/usr/local/bin/tool-daemon`.
+1. Installs `nssm` via `winget` if missing (Windows).
+2. Installs `uv` package manager if not present.
+3. Clones or uses repository sources.
+4. Provisions the `tool` system user (Linux system mode).
+5. Creates a Python virtual environment at `/opt/tool-daemon/.venv` (or `C:\Program Files\tool-daemon\.venv`) using `.python-version`.
+6. Builds and installs the distribution wheel package (`.whl`).
+7. Symlinks the executable or updates the system PATH.
 
 ---
 
@@ -60,28 +62,13 @@ Runs under dedicated unprivileged system user `tool`:
 sudo tool-daemon install --system
 ```
 
-#### Windows Service (Windows SCM)
+#### Windows Service (NSSM via Winget)
 Run Command Prompt or PowerShell as Administrator:
 ```powershell
 tool-daemon install --startup auto --display-name "Tool Agent Daemon"
 ```
 
-### 3. Service Options & Hardware Limits
-Customize poll interval, sandboxing, watchdog, and hardware resource boundaries during installation:
-```bash
-tool-daemon install \
-  --system \
-  --interval 5.0 \
-  --sandbox \
-  --memory-max 512M \
-  --memory-high 400M \
-  --cpu-quota 50% \
-  --tasks-max 100 \
-  --watchdog-sec 30 \
-  --sys-user tool
-```
-
-### 4. Uninstall Background Service
+### 3. Uninstall Background Service
 Stop and remove the installed service:
 ```bash
 # Linux User Mode
@@ -130,34 +117,51 @@ sudo journalctl -u tool-daemon -f -o cat
 
 ---
 
-### 2. Windows Service Management (SCM) Operations & Lifecycle
+### 2. Windows Service Operations & Lifecycle (NSSM)
 
-#### Service Control Commands (PowerShell / CMD)
+#### Service Status Query Commands
 ```powershell
-# Inspect Status
-Get-Service tool-daemon                     # PowerShell
-sc.exe query tool-daemon                     # CMD / PowerShell
+# Query via NSSM
+nssm status tool-daemon
 
-# Manual Control (Start / Stop / Restart)
-Start-Service tool-daemon                    # PowerShell
-Stop-Service tool-daemon                     # PowerShell
-Restart-Service tool-daemon                  # PowerShell
+# Query via PowerShell
+Get-Service tool-daemon
 
-# Alternative CMD Commands
-sc.exe start tool-daemon
-sc.exe stop tool-daemon
+# Query via CMD / sc.exe
+sc.exe query tool-daemon
+```
+
+#### Service Control Commands (PowerShell / CMD / NSSM)
+```powershell
+# Control via NSSM
+nssm start tool-daemon
+nssm stop tool-daemon
+nssm restart tool-daemon
+
+# Control via PowerShell
+Start-Service tool-daemon
+Stop-Service tool-daemon
+Restart-Service tool-daemon
 ```
 
 #### Monitoring Logs
-- **Console / Stream Logs**: When executed directly or redirected, logs are formatted as JSON or colored rich text.
-- **Windows Event Viewer**: View Windows Service Control Manager start, stop, and failure events using PowerShell:
+- **Stdout Logs**: Tail live operational logs:
+  ```powershell
+  Get-Content -Path "C:\ProgramData\tool-daemon\logs\tool-daemon.log" -Wait -Tail 50
+  ```
+- **Stderr / Error Logs**: Tail process-level unhandled exception error logs:
+  ```powershell
+  Get-Content -Path "C:\ProgramData\tool-daemon\logs\tool-daemon-error.log" -Wait -Tail 50
+  ```
+- **Windows Event Viewer**: View Windows Service Control Manager events:
   ```powershell
   Get-WinEvent -ProviderName "Service Control Manager" | Where-Object { $_.Message -match "tool-daemon" }
   ```
 
-#### Windows SCM Lifecycle Mechanics
-- **Automatic Boot Startup**: Installed with `start= auto` so the background service launches automatically upon system boot before user login.
-- **Failure Recovery Actions**: Configured via `sc.exe failure` to automatically restart the service 5 seconds (`5000ms`) after any crash, resetting the failure counter daily (`reset= 86400`).
+#### Windows NSSM Lifecycle Mechanics
+- **Automatic Boot Startup**: Installed with `SERVICE_AUTO_START` so the background service launches automatically upon system boot before user login.
+- **Log Rotation**: Configured via NSSM (`AppRotateFiles 1`, `AppRotateBytes 10485760`) to automatically rotate logs once file size reaches 10MB.
+- **Failure Recovery Actions**: Configured via NSSM (`AppExit Default Restart`, `AppRestartDelay 5000`) to automatically restart the service 5 seconds after any process crash.
 
 ---
 
